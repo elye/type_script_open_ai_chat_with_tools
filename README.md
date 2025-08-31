@@ -8,6 +8,8 @@ A simple, colorful command-line chat interface for interacting with AI models th
 - 🔄 **Continuous Conversation** - Maintains chat history throughout the session
 - 🛡️ **Type Safe** - Built with TypeScript for better development experience
 - 🎯 **Clean Architecture** - Modular design with separated concerns
+- ⚙️ **Configurable Model** - Easily switch between different AI models
+- 🔧 **Environment-based Configuration** - Flexible setup via environment variables
 - ⚡ **Fast Setup** - Quick to install and run
 
 ## Prerequisites
@@ -35,7 +37,10 @@ A simple, colorful command-line chat interface for interacting with AI models th
    ```env
    OPENAI_API_KEY=your-api-key-here
    OPENAI_API_URL=your-api-endpoint-here
+   OPENAI_API_MODEL=your-preferred-model-name
    ```
+   
+   **Note**: If `OPENAI_API_MODEL` is not specified, it defaults to `gpt-5-chat-2025-08-07`.
 
 ## Usage
 
@@ -69,9 +74,11 @@ npm start
 
 ### `ChatBot.ts`
 - Chat conversation management
-- User input handling
+- User input handling with colorful prompts
 - AI response processing
 - Terminal output formatting
+- **Configurable model support** - Accepts model name as constructor parameter
+- **Modular design** - No direct environment variable access
 
 ## Dependencies
 
@@ -87,24 +94,39 @@ npm start
 
 The application uses environment variables for configuration:
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `OPENAI_API_KEY` | Your API key | `sk-...` |
-| `OPENAI_API_URL` | API endpoint URL | `https://api.openai.com/v1` |
+| Variable | Description | Example | Required |
+|----------|-------------|---------|----------|
+| `OPENAI_API_KEY` | Your API key | `sk-...` | ✅ Yes |
+| `OPENAI_API_URL` | API endpoint URL | `https://api.openai.com/v1` | ✅ Yes |
+| `OPENAI_API_MODEL` | AI model to use | `gpt-4`, `claude-3-sonnet` | ❌ Optional |
+
+**Default Model**: If `OPENAI_API_MODEL` is not specified, the application defaults to `gpt-5-chat-2025-08-07`.
 
 ## Terminal Colors
 
-- 🟢 **YOU:** - Bold Green
-- 🟡 **BOT:** - Bold Yellow
-- ⚪ **Messages** - Default color
+- 🟢 **YOU:** - Bold Green (user input prompt)
+- 🟡 **BOT:** - Bold Yellow (AI response label)
+- ⚪ **Messages** - Default color (actual conversation content)
+
+The colorful prompts make it easy to distinguish between user input and AI responses in the terminal.
 
 ## Development
 
-This is a TypeScript project. To modify:
+This is a TypeScript project with a modular architecture:
 
+### **Architecture Improvements**
+- **Dependency Injection**: The `ChatBot` class receives its dependencies (client, readline interface, model) via constructor
+- **Environment Variable Handling**: Only `main.ts` handles environment variables, keeping concerns separated
+- **Configurable Model**: Easy to switch between different AI models without code changes
+- **Type Safety**: Full TypeScript support with proper type definitions
+
+### **Making Changes**
 1. Edit the `.ts` files
 2. The `tsx` runner handles TypeScript compilation automatically
 3. No build step required for development
+
+### **Testing Different Models**
+Simply change the `OPENAI_API_MODEL` environment variable or modify the default in `main.ts`.
 
 ## Contributing
 

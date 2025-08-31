@@ -4,11 +4,13 @@ import readline from "node:readline/promises";
 export class ChatBot {
   private client: OpenAI;
   private rl: readline.Interface;
+  private model: string;
   private conversation: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
 
-  constructor(client: OpenAI, rl: readline.Interface) {
+  constructor(client: OpenAI, rl: readline.Interface, model: string) {
     this.client = client;
     this.rl = rl;
+    this.model = model;
   }
 
   private async getUserInput(): Promise<OpenAI.Chat.Completions.ChatCompletionMessageParam> {
@@ -18,7 +20,7 @@ export class ChatBot {
 
   private async getAIResponse(): Promise<OpenAI.Chat.Completions.ChatCompletionMessage> {
     const { choices } = await this.client.chat.completions.create({
-      model: "claude-sonnet-4-20250514",
+      model: this.model,
       messages: this.conversation,
     });
     return choices[0].message;

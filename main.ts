@@ -34,7 +34,8 @@ const main = async () => {
 
   const client = createOpenAIClient();
   const rl = createReadlineInterface();
-  const chatBot = new ChatBot(client, rl);
+  const model = process.env.OPENAI_API_MODEL || "gpt-5-chat-2025-08-07";
+  const chatBot = new ChatBot(client, rl, model);
 
   await chatBot.startChatLoop();
 };
