@@ -5,7 +5,7 @@ A lightweight, secure, TypeScript command‑line chat interface for interacting 
 ## Features
 
 - 🎨 **Colorized Terminal UX** – Bold green `YOU:`, yellow `BOT:`, blue `USE:` labels
-- 🧰 **Tool Calling** – Current tools: read a file (`tool_read_file`), list directory contents (`tool_list_files`)
+- 🧰 **Tool Calling** – Current tools: read a file (`tool_read_file`), list directory contents (`tool_list_files`), create / update files (`tool_write_file`)
 - 🔄 **Streaming Loop** – Continuous conversation with preserved history
 - 🛡️ **Type Safe** – End‑to‑end TypeScript types (OpenAI client + tool schemas)
 - 🔒 **Security Guardrails** – Path + extension restrictions; blocks hidden & sensitive files
@@ -66,7 +66,15 @@ BOT: (file content summary ...)
 
 YOU: What files are in the tools directory?
 USE: The model needs tool_list_files with arguments: {"dir":"tools"}
-BOT: I see: index.ts, readFile.ts, listFiles.ts ...
+BOT: I see: index.ts, readFile.ts, listFiles.ts, writeFile.ts, restrictions.ts ...
+
+YOU: Create a NOTES.md file saying Hello.
+USE: The model needs tool_write_file with arguments: {"path":"NOTES.md","content":"Hello","find":""}
+BOT: File created successfully.
+
+YOU: Replace Hello with Hello World in NOTES.md
+USE: The model needs tool_write_file with arguments: {"path":"NOTES.md","content":"Hello World","find":"Hello"}
+BOT: Replacement applied.
 ```
 
 ## Project Structure
@@ -74,10 +82,12 @@ BOT: I see: index.ts, readFile.ts, listFiles.ts ...
 ```
 ├── main.ts            # Entry point and application setup
 ├── ChatBot.ts         # Chat logic and AI interaction loop
-├── tools/             # Tool implementations + registry
+├── tools/             # Tool implementations + shared security helpers
 │   ├── index.ts       # Tool array + dispatcher
 │   ├── readFile.ts    # Secure file reading tool
-│   └── listFiles.ts   # Secure directory listing tool
+│   ├── listFiles.ts   # Secure directory listing tool
+│   ├── writeFile.ts   # Secure file create / update / find+replace tool
+│   └── restrictions.ts# Centralized path & file security guards
 ├── package.json       # Scripts & deps
 ├── .env               # Environment variables (create locally)
 └── README.md          # Documentation
@@ -103,13 +113,25 @@ BOT: I see: index.ts, readFile.ts, listFiles.ts ...
 - **`index.ts`** – Exports the `tools` array and a `runTool` dispatcher
 - **`readFile.ts`** – Reads a single file (after security checks)
 - **`listFiles.ts`** – Lists files (name + directory flag) in a directory (after path restriction)
+- **`writeFile.ts`** – Creates a file or performs a find+replace update (see parameters below)
+- **`restrictions.ts`** – Shared path + file security logic (`ensurePathAllowed`, `ensureFileSecurity`)
 
 #### Tool Security Model
-Both tools enforce:
+All file-related tools enforce:
 1. **Path Allowlist** – Must live inside the current working directory OR `~/Development`.
 2. **Sensitive File Blocking** – `.env*`, hidden non‑code files, disallowed extensions are rejected.
-3. **Extension Filtering (readFile)** – Only programming / config / doc related extensions (see source) or well‑known build filenames.
-4. **JSON Output** – Tools always return JSON strings for predictable model consumption.
+3. **Extension Filtering (readFile/writeFile)** – Only programming / config / doc related extensions (see source) or well‑known build filenames.
+4. **Write Constraints** – `tool_write_file` cannot create or modify disallowed / sensitive / hidden files.
+5. **JSON Output** – Tools always return JSON strings for predictable model consumption.
+
+#### `tool_write_file` Parameters
+| Field | Meaning | Behavior |
+|-------|---------|----------|
+| `path` | Target file path | Must pass security checks |
+| `content` | New content or replacement text | Overwrites or replaces depending on `find` |
+| `find` | Text to search for (can be empty string) | Empty => create/overwrite whole file; non-empty => string replace first/all JS replace occurrences |
+
+Note: Current implementation performs a simple `String.replace` (first occurrence). Future enhancement: global / regex replace.
 
 ## Dependencies
 
