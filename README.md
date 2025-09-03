@@ -1,18 +1,18 @@
 # Elye Agent - AI Chat Interface with Tools
 
-A powerful command-line chat interface for interacting with AI models through OpenAI-compatible APIs, featuring tool integration and secure file access.
+A lightweight, secure, TypeScript command‑line chat interface for interacting with OpenAI‑compatible APIs, featuring function calling ("tools") for safe file system inspection.
 
 ## Features
 
-- 🎨 **Colorful Terminal Interface** - Bold green "YOU:", yellow "BOT:", and blue "USE:" prompts
-- �️ **Tool Integration** - AI can read files and execute tools within secure boundaries
-- �🔄 **Continuous Conversation** - Maintains chat history throughout the session
-- 🛡️ **Type Safe** - Built with TypeScript for better development experience
-- 🔒 **Secure File Access** - Restricted to programming files within Development directory
-- 🎯 **Clean Architecture** - Modular design with separated concerns
-- ⚙️ **Configurable Model** - Easily switch between different AI models
-- 🔧 **Environment-based Configuration** - Flexible setup via environment variables
-- ⚡ **Fast Setup** - Quick to install and run
+- 🎨 **Colorized Terminal UX** – Bold green `YOU:`, yellow `BOT:`, blue `USE:` labels
+- 🧰 **Tool Calling** – Current tools: read a file (`tool_read_file`), list directory contents (`tool_list_files`)
+- 🔄 **Streaming Loop** – Continuous conversation with preserved history
+- 🛡️ **Type Safe** – End‑to‑end TypeScript types (OpenAI client + tool schemas)
+- 🔒 **Security Guardrails** – Path + extension restrictions; blocks hidden & sensitive files
+- 🧩 **Modular Architecture** – Clear separation (entrypoint, chatbot core, tool registry, tool impls)
+- ⚙️ **Configurable Model** – Select model via env var; sane default if unset
+- 🌱 **Minimal Dependencies** – Fast install & no custom build step (run with `tsx`)
+- 🚀 **Easy Extensibility** – Add new tools with a tiny definition + execution function
 
 ## Prerequisites
 
@@ -34,15 +34,15 @@ A powerful command-line chat interface for interacting with AI models through Op
    ```
 
 3. **Set up environment variables**
-   
-   Create a `.env` file in the root directory:
-   ```env
-   OPENAI_API_KEY=your-api-key-here
-   OPENAI_API_URL=your-api-endpoint-here
-   OPENAI_API_MODEL=your-preferred-model-name
-   ```
-   
-   **Note**: If `OPENAI_API_MODEL` is not specified, it defaults to `gpt-5-chat-2025-08-07`.
+
+  Create a `.env` file in the root directory:
+  ```env
+  OPENAI_API_KEY=your-api-key-here
+  OPENAI_API_URL=https://api.openai.com/v1   # or another compatible endpoint
+  OPENAI_API_MODEL=claude-sonnet-4-20250514  # override if you like
+  ```
+
+  **Default Model**: If `OPENAI_API_MODEL` is not set the code currently defaults to `claude-sonnet-4-20250514` (see `main.ts`).
 
 ## Usage
 
@@ -62,24 +62,25 @@ npm start
 ```
 YOU: Can you read the package.json file?
 USE: The model needs tool_read_file with arguments: {"path":"package.json"}
-BOT: I can see this is a TypeScript project called "elye-agent" with dependencies including OpenAI and dotenv...
+BOT: (file content summary ...)
 
 YOU: What files are in the tools directory?
-USE: The model needs tool_read_file with arguments: {"path":"tools"}
-BOT: I can see there are two files in the tools directory: index.ts and readFile.ts...
+USE: The model needs tool_list_files with arguments: {"dir":"tools"}
+BOT: I see: index.ts, readFile.ts, listFiles.ts ...
 ```
 
 ## Project Structure
 
 ```
-├── main.ts          # Entry point and application setup
-├── ChatBot.ts       # Chat logic and AI interaction
-├── tools/           # Tool implementations and definitions
-│   ├── index.ts     # Tool registry and execution
-│   └── readFile.ts  # File reading tool with security restrictions
-├── package.json     # Dependencies and scripts
-├── .env            # Environment variables (create this)
-└── README.md       # This file
+├── main.ts            # Entry point and application setup
+├── ChatBot.ts         # Chat logic and AI interaction loop
+├── tools/             # Tool implementations + registry
+│   ├── index.ts       # Tool array + dispatcher
+│   ├── readFile.ts    # Secure file reading tool
+│   └── listFiles.ts   # Secure directory listing tool
+├── package.json       # Scripts & deps
+├── .env               # Environment variables (create locally)
+└── README.md          # Documentation
 ```
 
 ## Architecture
@@ -99,17 +100,22 @@ BOT: I can see there are two files in the tools directory: index.ts and readFile
 - **Modular design** - No direct environment variable access
 
 ### `tools/`
-- **`index.ts`** - Tool registry, definitions, and execution logic
-- **`readFile.ts`** - Secure file reading tool with restrictions:
-  - Only allows access to current working directory or ~/Development folder
-  - Restricted to programming language files only
-  - Blocks sensitive files (.env, hidden files, etc.)
+- **`index.ts`** – Exports the `tools` array and a `runTool` dispatcher
+- **`readFile.ts`** – Reads a single file (after security checks)
+- **`listFiles.ts`** – Lists files (name + directory flag) in a directory (after path restriction)
+
+#### Tool Security Model
+Both tools enforce:
+1. **Path Allowlist** – Must live inside the current working directory OR `~/Development`.
+2. **Sensitive File Blocking** – `.env*`, hidden non‑code files, disallowed extensions are rejected.
+3. **Extension Filtering (readFile)** – Only programming / config / doc related extensions (see source) or well‑known build filenames.
+4. **JSON Output** – Tools always return JSON strings for predictable model consumption.
 
 ## Dependencies
 
 ### Runtime Dependencies
-- **`openai`** - OpenAI API client
-- **`dotenv`** - Environment variable loading
+- **`openai`** – API client (chat + tool calling)
+- **`dotenv`** – Environment variable loading
 
 ### Development Dependencies
 - **`tsx`** - TypeScript execution
@@ -125,7 +131,7 @@ The application uses environment variables for configuration:
 | `OPENAI_API_URL` | API endpoint URL | `https://api.openai.com/v1` | ✅ Yes |
 | `OPENAI_API_MODEL` | AI model to use | `gpt-4`, `claude-sonnet-4-20250514` | ❌ Optional |
 
-**Default Model**: If `OPENAI_API_MODEL` is not specified, the application defaults to `claude-sonnet-4-20250514`.
+**Default Model (current)**: `claude-sonnet-4-20250514` (centralized in `main.ts`).
 
 ## Terminal Colors
 
@@ -181,7 +187,27 @@ This is a TypeScript project with a modular architecture:
 3. No build step required for development
 
 ### **Testing Different Models**
-Simply change the `OPENAI_API_MODEL` environment variable or modify the default in `main.ts`.
+Change `OPENAI_API_MODEL` in `.env` (hot applied on next run) or edit the fallback in `main.ts`.
+
+## Adding a New Tool
+1. Create `tools/yourTool.ts` exporting:
+  - A `<name>Definition: OpenAI.Chat.Completions.ChatCompletionTool`
+  - An executor function returning a JSON string
+2. Import & append the definition + executor logic in `tools/index.ts`.
+3. Keep outputs small & structured (JSON) for best model grounding.
+
+Example skeleton:
+```ts
+export const myToolDefinition = { /* OpenAI tool schema */ };
+export const myTool = async (params: MyParams) => JSON.stringify({ result: 'ok' });
+```
+
+## Roadmap Ideas
+- Streaming partial responses
+- Improved error surface (pretty print JSON)
+- Optional logging verbosity flag
+- Unit tests around restriction logic
+- Token usage reporting
 
 ## Contributing
 
@@ -189,7 +215,7 @@ This is a personal project, but feel free to fork and modify for your own use!
 
 ## License
 
-Private project - not for public distribution.
+Private project – not for public distribution.
 
 ## Author
 
