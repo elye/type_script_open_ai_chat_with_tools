@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { homedir } from "node:os";
+import { ensurePathAllowed } from "./restrictions.ts";
 
 export const listFilesDefinition: OpenAI.Chat.Completions.ChatCompletionTool = {
   type: "function",
@@ -27,25 +27,13 @@ export type ListFilesParams = {
   dir: string;
 };
 
-const applyRestriction = (resolvedPath: string) => {
-  const currentWorkingDir = process.cwd();
-  const developmentPath = path.resolve(path.join(homedir(), 'Development'));
-      
-  const isInCurrentDir = resolvedPath.startsWith(currentWorkingDir);
-  const isInDevelopmentDir = resolvedPath.startsWith(developmentPath);
-  
-  if (!isInCurrentDir && !isInDevelopmentDir) {
-    throw new Error(
-      "Only allowed to access files inside the current working directory or the ~/Development directory."
-    );
-  }
-};
+// (Was: local applyRestriction) now using shared ensurePathAllowed
 
 export const listFiles = async (params: ListFilesParams) => {
   try {
     const resolvedDir = path.resolve(params.dir);
 
-    applyRestriction(resolvedDir);
+  ensurePathAllowed(resolvedDir);
 
     const files = await fs.readdir(resolvedDir, { withFileTypes: true });
 
