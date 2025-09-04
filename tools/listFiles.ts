@@ -32,8 +32,7 @@ export type ListFilesParams = {
 export const listFiles = async (params: ListFilesParams) => {
   try {
     const resolvedDir = path.resolve(params.dir);
-
-  ensurePathAllowed(resolvedDir);
+    ensurePathAllowed(resolvedDir);
 
     const files = await fs.readdir(resolvedDir, { withFileTypes: true });
 

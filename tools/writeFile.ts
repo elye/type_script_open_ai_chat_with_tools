@@ -52,7 +52,7 @@ const doesFileExist = async (filePath: string): Promise<boolean> => {
 export const writeFile = async (params: WriteFileParams) => {
   try {
     const resolvedPath = path.resolve(params.path);
-  ensureFileSecurity(resolvedPath);
+    ensureFileSecurity(resolvedPath);
 
     const fileExists = await doesFileExist(resolvedPath);
 

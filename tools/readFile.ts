@@ -31,8 +31,7 @@ export type ReadFileParams = {
 export const readFile = async (params: ReadFileParams) => {
   try {
     const resolvedPath = path.resolve(params.path);
-
-  ensureFileSecurity(resolvedPath);
+    ensureFileSecurity(resolvedPath);
 
     const fileContent = await fs.readFile(resolvedPath, "utf-8");
 
